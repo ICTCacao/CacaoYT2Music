@@ -5,7 +5,7 @@ enum Prefs {
     static let folder = "saveFolder"               // 保存先フォルダのパス
     static let format = "audioFormat"              // m4a / mp3
     static let setFinderIcon = "setFinderIcon"     // 保存したファイルの Finder アイコンにカバー画像を使う
-    static let squareCover = "squareCover"         // カバー画像を正方形に切り抜く
+    static let coverMode = "coverMode"             // カバー画像の整え方（CoverMode）
     static let keepThumbnail = "keepThumbnail"     // カバー画像（jpg）もファイルとして残す
     static let wholePlaylist = "wholePlaylist"     // 再生リストの URL なら全曲
     static let idInFilename = "idInFilename"       // ファイル名に動画 ID を付ける（同名曲の衝突よけ）
@@ -17,7 +17,7 @@ enum Prefs {
             folder: defaultFolder.path,
             format: AudioFormat.m4a.rawValue,
             setFinderIcon: true,
-            squareCover: true,
+            coverMode: CoverMode.pad.rawValue,
             keepThumbnail: false,
             wholePlaylist: false,
             idInFilename: false,
@@ -40,6 +40,21 @@ enum AudioFormat: String, CaseIterable, Identifiable {
         switch self {
         case .m4a: return "元の音声をそのまま（劣化なし・おすすめ）"
         case .mp3: return "変換して保存（対応機器が多い）"
+        }
+    }
+}
+
+/// カバー画像（YouTube のサムネイルは 16:9）をどう正方形にするか
+enum CoverMode: String, CaseIterable, Identifiable {
+    case pad      // 幅はそのまま、上下をぼかした同じ画像で埋める
+    case crop     // 中央を正方形に切り抜く
+    case none     // 16:9 のまま
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .pad: return "16:9 の幅のまま、上下をぼかしで埋めて正方形に"
+        case .crop: return "中央を正方形に切り抜く"
+        case .none: return "そのまま（16:9）"
         }
     }
 }

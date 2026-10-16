@@ -4,7 +4,7 @@ import AppKit
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage(Prefs.setFinderIcon) private var setFinderIcon = true
-    @AppStorage(Prefs.squareCover) private var squareCover = true
+    @AppStorage(Prefs.coverMode) private var coverMode = CoverMode.pad.rawValue
     @AppStorage(Prefs.keepThumbnail) private var keepThumbnail = false
     @AppStorage(Prefs.wholePlaylist) private var wholePlaylist = false
     @AppStorage(Prefs.idInFilename) private var idInFilename = false
@@ -17,7 +17,10 @@ struct SettingsView: View {
         Form {
             Section("カバー画像") {
                 Toggle("保存したファイルの Finder アイコンにカバー画像を使う", isOn: $setFinderIcon)
-                Toggle("カバー画像を正方形に切り抜く（ミュージックで見たときに収まりがよい）", isOn: $squareCover)
+                Picker("正方形にする", selection: $coverMode) {
+                    ForEach(CoverMode.allCases) { m in Text(m.label).tag(m.rawValue) }
+                }
+                .pickerStyle(.radioGroup)
                 Toggle("カバー画像（jpg）もファイルとして残す", isOn: $keepThumbnail)
                 Text("曲の中には常にカバー画像とタイトル・チャンネル名を埋め込みます。")
                     .font(.caption).foregroundStyle(.secondary)

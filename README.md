@@ -8,7 +8,7 @@ YouTube の URL を貼り付けると、音声だけを **m4a（または mp3）
 | URL → m4a | 元の AAC 音声をそのまま取り出す（劣化なし） |
 | URL → mp3 | 最高品質（VBR）に変換 |
 | 曲情報 | タイトル・チャンネル名を埋め込む |
-| カバー画像 | YouTube のサムネイルを正方形に切り抜いて埋め込む。保存したファイルの **Finder アイコン** にも使う |
+| カバー画像 | YouTube のサムネイル（16:9）を、幅はそのまま上下をぼかしで埋めて正方形にして埋め込む。保存したファイルの **Finder アイコン** にも使う |
 | まとめて | 複数 URL・再生リスト（設定で全曲）・ドラッグ＆ドロップ・クリップボード（⇧⌘V） |
 
 ## 必要なもの
@@ -27,7 +27,7 @@ YouTube 側の変更で保存できなくなったら、設定画面の「yt-dlp
 2. 保存先は既定で `~/Music/YouTube`。「変更…」で好きな場所に。
 3. できたら行の 🔍 で Finder に表示、▶ で再生。ミュージックのライブラリに入れるなら m4a をドラッグするだけ。
 
-設定（⌘,）で、Finder アイコンにカバーを使うか、正方形に切り抜くか、jpg も残すか、再生リストを全曲にするか、
+設定（⌘,）で、Finder アイコンにカバーを使うか、正方形のしかた（上下を埋める／切り抜く／そのまま）、jpg も残すか、再生リストを全曲にするか、
 ファイル名に動画 ID を付けるか、yt-dlp / ffmpeg の場所を変えられる。
 
 ## 構成
@@ -55,7 +55,7 @@ CacaoYT2Music/
 ```
 -x --audio-format m4a|mp3 [--audio-quality 0]
 --embed-metadata --embed-thumbnail --write-thumbnail --convert-thumbnails jpg
---ppa "ThumbnailsConvertor+ffmpeg_o:-c:v mjpeg -vf crop=..."   # 正方形に切り抜く（設定で切れる）
+--ppa "ThumbnailsConvertor+ffmpeg_o:-c:v mjpeg -vf ..."        # 正方形にする（上下をぼかしで埋める／切り抜く／なし）
 --print before_dl:TITLE / UPLOADER、after_move:FILE          # 画面に出す題名とできたファイルの場所
 --no-playlist | --yes-playlist
 -o <保存先>/%(title)s.%(ext)s

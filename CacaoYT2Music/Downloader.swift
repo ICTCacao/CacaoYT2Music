@@ -6,7 +6,7 @@ final class Downloader {
     struct Options {
         var folder: URL
         var format: AudioFormat
-        var squareCover: Bool
+        var coverMode: CoverMode
         var wholePlaylist: Bool
         var idInFilename: Bool
         var ytdlp: URL
@@ -16,8 +16,10 @@ final class Downloader {
     private var process: Process?
     private var buffer = Data()
 
-    /// 正方形に切り抜く yt-dlp の後処理引数（README の例と同じ）
+    /// 中央を正方形に切り抜く yt-dlp の後処理引数（README の例と同じ）
     static let squareCropPPA = "ThumbnailsConvertor+ffmpeg_o:-c:v mjpeg -vf crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\""
+    /// 幅はそのまま、上下を同じ画像のぼかしで埋めて正方形にする
+    static let squarePadPPA = "ThumbnailsConvertor+ffmpeg_o:-c:v mjpeg -vf \"split[o][b];[b]scale='max(iw,ih)':'max(iw,ih)',gblur=sigma=40,eq=brightness=-0.08[bg];[bg][o]overlay=(W-w)/2:(H-h)/2\""
 
     static func arguments(for url: String, options o: Options) -> [String] {
         var a: [String] = [
@@ -36,7 +38,11 @@ final class Downloader {
             "-o", o.folder.path + "/" + (o.idInFilename ? "%(title)s [%(id)s].%(ext)s" : "%(title)s.%(ext)s"),
         ]
         if o.format == .mp3 { a += ["--audio-quality", "0"] }
-        if o.squareCover { a += ["--ppa", squareCropPPA] }
+        switch o.coverMode {
+        case .pad: a += ["--ppa", squarePadPPA]
+        case .crop: a += ["--ppa", squareCropPPA]
+        case .none: break
+        }
         a.append(o.wholePlaylist ? "--yes-playlist" : "--no-playlist")
         a.append("--")
         a.append(url)

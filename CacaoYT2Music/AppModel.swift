@@ -100,7 +100,7 @@ final class AppModel {
         let opts = Downloader.Options(
             folder: folder,
             format: format,
-            squareCover: d.bool(forKey: Prefs.squareCover),
+            coverMode: CoverMode(rawValue: d.string(forKey: Prefs.coverMode) ?? "") ?? .pad,
             wholePlaylist: d.bool(forKey: Prefs.wholePlaylist),
             idInFilename: d.bool(forKey: Prefs.idInFilename),
             ytdlp: ytdlp,
