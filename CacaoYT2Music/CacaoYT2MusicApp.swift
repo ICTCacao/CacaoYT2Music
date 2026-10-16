@@ -61,6 +61,8 @@ struct CacaoYT2MusicApp: App {
                     .keyboardShortcut("v", modifiers: [.command, .shift])
                 Button("保存先を Finder で開く") { model.revealFolder() }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                Divider()
+                Button("保存先に残ったカバー画像（jpg）を片づける") { model.tidyFolder() }
             }
         }
     }

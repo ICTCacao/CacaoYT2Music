@@ -46,6 +46,7 @@ enum Tools {
         while p.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
         if p.isRunning { p.terminate() }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return (p.terminationStatus, String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))
+        // 行頭のタブは意味を持つ（--print の空の項目）ので、改行だけ落とす
+        return (p.terminationStatus, String(decoding: data, as: UTF8.self).trimmingCharacters(in: .newlines))
     }
 }

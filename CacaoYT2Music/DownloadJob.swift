@@ -23,6 +23,8 @@ final class DownloadJob: Identifiable {
     var state: State = .waiting
     var progress: Double = 0           // 0...1（取得中のみ意味を持つ）
     var files: [URL] = []              // できあがった音声ファイル
+    var errorCount = 0                 // 再生リストの中で保存できなかった曲数
+    var lastError: String?             // その理由（最後のもの）
     var thumbnail: NSImage?            // 一覧に出すカバー画像
     var log: [String] = []             // yt-dlp の出力（そのまま）
 
@@ -47,7 +49,9 @@ final class DownloadJob: Identifiable {
         case .running(let phase):
             if let it = itemText { return "\(it)　\(phase)" }
             return phase
-        case .done: return files.count > 1 ? "完了（\(files.count) 曲）" : "完了"
+        case .done:
+            if errorCount > 0 { return "完了（\(files.count) 曲、\(errorCount) 曲は保存できず）" }
+            return files.count > 1 ? "完了（\(files.count) 曲）" : "完了"
         case .failed(let msg): return "失敗: \(msg)"
         case .cancelled: return "中止"
         }

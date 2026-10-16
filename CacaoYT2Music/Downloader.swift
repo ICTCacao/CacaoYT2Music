@@ -152,7 +152,11 @@ final class Downloader {
         } else if t.hasPrefix("[Metadata]") {
             job.state = .running("曲情報を書き込み中")
         } else if t.hasPrefix("ERROR:") {
-            return humanize(String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces))
+            // 再生リストでは、1 曲が失敗しても yt-dlp は次の曲に進む。数えておいて最後にまとめて見せる
+            let msg = humanize(String(t.dropFirst(6)).trimmingCharacters(in: .whitespaces))
+            job.errorCount += 1
+            job.lastError = msg
+            return msg
         }
         return nil
     }

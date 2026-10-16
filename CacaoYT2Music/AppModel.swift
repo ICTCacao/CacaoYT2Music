@@ -13,6 +13,8 @@ final class AppModel {
 
     private var downloader: Downloader?
     private var current: DownloadJob?
+    /// 待機中の行に題名を出すための軽い問い合わせ（1 件ずつ・ダウンロードとは別に動く）
+    private let prefetchQueue = DispatchQueue(label: "com.ictcacao.CacaoYT2Music.prefetch")
 
     init() {
         Prefs.registerDefaults()
@@ -78,8 +80,48 @@ final class AppModel {
 
     private func enqueue(_ url: String) {
         if jobs.contains(where: { $0.url == url && $0.isActive }) { return }
-        jobs.insert(DownloadJob(url: url), at: 0)   // 新しいものを上に
+        let job = DownloadJob(url: url)
+        jobs.insert(job, at: 0)   // 新しいものを上に
+        prefetch(job)
         pump()
+    }
+
+    // MARK: 題名の先読み
+
+    /// 追加した直後に yt-dlp で題名・チャンネル名・サムネイルだけ取ってくる（1〜2 秒）。本番の取得が先に始まっていたら、そちらを優先する
+    private func prefetch(_ job: DownloadJob) {
+        guard let ytdlp else { return }
+        let whole = UserDefaults.standard.bool(forKey: Prefs.wholePlaylist)
+        let args: [String] = [
+            "--no-update", "--no-warnings", "--no-colors",
+            "--flat-playlist", "--skip-download", "-I", "1",
+            whole ? "--yes-playlist" : "--no-playlist",
+            "--print", "%(playlist_title|)s\t%(title)s\t%(playlist_channel,playlist_uploader,channel,uploader|)s\t%(thumbnail|)s\t%(id|)s",
+            "--", job.url,
+        ]
+        prefetchQueue.async { [weak self] in
+            let r = Tools.run(ytdlp, args, timeout: 30)
+            guard r.status == 0, let line = r.output.split(separator: "\n").first else { return }
+            let f = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard f.count >= 5 else { return }
+            let playlistTitle = f[0].isEmpty ? nil : f[0]
+            let title = f[1]
+            let uploader = (f[2].isEmpty || f[2] == "NA") ? nil : f[2]
+            let thumb = !f[3].isEmpty ? f[3] : (f[4].isEmpty ? "" : "https://i.ytimg.com/vi/\(f[4])/hqdefault.jpg")
+            DispatchQueue.main.async {
+                guard let self, self.jobs.contains(where: { $0 === job }) else { return }
+                if job.playlistTitle == nil { job.playlistTitle = playlistTitle }
+                if job.title == nil { job.title = title }
+                if job.uploader == nil { job.uploader = uploader }
+            }
+            guard let u = URL(string: thumb) else { return }
+            URLSession.shared.dataTask(with: u) { data, _, _ in
+                guard let data, let img = NSImage(data: data) else { return }
+                DispatchQueue.main.async {
+                    if job.thumbnail == nil { job.thumbnail = img }
+                }
+            }.resume()
+        }
     }
 
     // MARK: 実行（1 件ずつ）
@@ -111,11 +153,12 @@ final class AppModel {
         job.state = .running("準備中")
         dl.start(job: job, options: opts) { [weak self] error in
             guard let self else { return }
-            if let error {
-                job.state = (error == "中止") ? .cancelled : .failed(error)
+            if error == "中止" {
+                job.state = .cancelled
             } else if job.files.isEmpty {
-                job.state = .failed("ファイルができませんでした")
+                job.state = .failed(error ?? "ファイルができませんでした")
             } else {
+                // 再生リストの一部が失敗していても、できた曲ぶんは仕上げて「完了」にする（失敗数は行に出す）
                 self.finish(job)
                 job.state = .done
             }
@@ -133,7 +176,7 @@ final class AppModel {
         for file in job.files {
             guard let thumb = CoverArt.thumbnailURL(for: file) else { continue }
             if let img = NSImage(contentsOf: thumb) {
-                if job.thumbnail == nil { job.thumbnail = img }
+                if file == job.files.first { job.thumbnail = img }   // 先読みの仮の画像を本物のカバーに置き換える
                 if setIcon { CoverArt.applyFinderIcon(image: img, to: file) }
             }
             if !keep { try? FileManager.default.removeItem(at: thumb) }
@@ -159,6 +202,8 @@ final class AppModel {
         job.progress = 0
         job.files = []
         job.log = []
+        job.errorCount = 0
+        job.lastError = nil
         pump()
     }
 
@@ -175,6 +220,28 @@ final class AppModel {
 
     func reveal(_ job: DownloadJob) {
         if job.files.isEmpty { revealFolder() } else { NSWorkspace.shared.activateFileViewerSelecting(job.files) }
+    }
+
+    /// 保存先に残っている jpg（途中で失敗した再生リストのぶんなど）を Finder アイコンにして片づける
+    func tidyFolder() {
+        let fm = FileManager.default
+        let d = UserDefaults.standard
+        let setIcon = d.bool(forKey: Prefs.setFinderIcon)
+        let keep = d.bool(forKey: Prefs.keepThumbnail)
+        var n = 0
+        if let items = try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) {
+            for f in items where ["m4a", "mp3"].contains(f.pathExtension.lowercased()) {
+                guard let t = CoverArt.thumbnailURL(for: f), let img = NSImage(contentsOf: t) else { continue }
+                if setIcon { CoverArt.applyFinderIcon(image: img, to: f) }
+                if !keep { try? fm.removeItem(at: t) }
+                n += 1
+            }
+        }
+        let alert = NSAlert()
+        alert.messageText = n == 0 ? "片づけるものはありませんでした" : "\(n) 曲のカバー画像を片づけました"
+        alert.informativeText = n == 0 ? "保存先に、曲と同じ名前の jpg は残っていません。"
+            : (setIcon ? "Finder アイコンに設定し、" : "") + (keep ? "jpg はそのまま残しました。" : "jpg は消しました。")
+        alert.runModal()
     }
 
     func revealFolder() {

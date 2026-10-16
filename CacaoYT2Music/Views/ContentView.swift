@@ -120,7 +120,7 @@ struct JobRow: View {
                     .font(.headline)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                if job.playlistTitle != nil, let t = job.title, job.isActive {
+                if job.playlistTitle != nil, let t = job.title, case .running = job.state {
                     Text(t).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 } else if let u = job.uploader {
                     Text(u).font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -145,6 +145,12 @@ struct JobRow: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                    if job.state == .done, job.errorCount > 0 {
+                        Text("\(job.errorCount) 曲は保存できませんでした（\(job.lastError ?? "")）")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .lineLimit(1)
+                    }
                 }
             }
             Spacer()
@@ -204,6 +210,12 @@ struct JobRow: View {
                     model.retry(job)
                 } label: { Image(systemName: "arrow.clockwise") }
                     .help("やり直す")
+            }
+            if job.state == .done, job.errorCount > 0 {
+                Button {
+                    model.retry(job)
+                } label: { Image(systemName: "arrow.clockwise") }
+                    .help("やり直す（再生リスト全体をもう一度）")
             }
             if job.state == .cancelled {
                 Button {
