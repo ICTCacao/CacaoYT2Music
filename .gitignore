@@ -1,0 +1,11 @@
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+.build/
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+# 配布物: dmg は残し、.app はビルドで再生成する
+dist/*.app
+dist/.tmp-*.dmg
