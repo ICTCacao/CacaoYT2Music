@@ -11,6 +11,12 @@ YouTube の URL を貼り付けると、音声だけを **m4a（または mp3）
 | カバー画像 | YouTube のサムネイル（16:9）を、幅はそのまま上下をぼかしで埋めて正方形にして埋め込む。保存したファイルの **Finder アイコン** にも使う |
 | まとめて | 複数 URL・再生リスト（設定で全曲）・ドラッグ＆ドロップ・クリップボード（⇧⌘V） |
 
+## 入手
+
+[Releases](https://github.com/ICTCacao/CacaoYT2Music/releases) から `CacaoYT2Music-<version>.dmg` を落とし、
+中のアプリを Applications へドラッグする。署名していないので、初回は Applications 内のアプリを
+右クリック →「開く」で起動する（macOS 14 以降）。
+
 ## 必要なもの
 
 macOS 14 以降と、Homebrew の yt-dlp / ffmpeg。
